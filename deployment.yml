@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hw-deploy
+  namespace: m
+  labels: 
+    app: otus-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: flask
+      tier: backend
+  template:
+    metadata:
+      name: otus-pod
+      labels:
+        app: flask
+        tier: backend
+    spec:
+      containers:
+        - name: hw
+          image: evilscream/otus_docker:1.0
+          ports:
+          - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5

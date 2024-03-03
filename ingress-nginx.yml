@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: otus-nginx
+  namespace: m
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /health
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  labels:
+    ingress: otus-hw
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: arch.homework
+    http:
+      paths:
+      - path: /otusapp/([^/]+)/health
+        pathType: ImplementationSpecific
+        backend:
+          service:
+            name: hw-svc
+            port:
+              number: 80
