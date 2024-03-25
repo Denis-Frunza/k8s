@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.serviceMongo.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  type: {{ .Values.serviceMongo.type }}
+  ports:
+    - port: {{ .Values.serviceMongo.port }}
+      targetPort: {{ .Values.serviceMongo.targetPort }}
+      protocol: {{ .Values.serviceMongo.protocol }}
+  selector:
+    {{- toYaml .Values.serviceMongo.selector | nindent 4 }}

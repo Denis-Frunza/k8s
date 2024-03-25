@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.IngressUserApi.name }}
+  namespace: "otus" ##{{ .Release.Namespace }}
+  annotations:
+    {{- toYaml .Values.IngressUserApi.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.IngressUserApi.className }}
+  rules:
+  - host: {{ .Values.IngressUserApi.host }}
+    http:
+      paths:
+        {{- range .Values.IngressUserApi.paths }}
+        - path: {{ .path }}
+          pathType: ImplementationSpecific
+          backend:
+            service:
+              name: {{ .backendService }}
+              port:
+                number: {{ .backendPort }}
+        {{- end }}
+

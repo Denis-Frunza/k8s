@@ -1,0 +1,110 @@
+replicaCount: 3
+
+deployment:
+  name: hw-deploy
+  labels:
+    app: otus-deploy
+
+commonLabels:
+  app.kubernetes.io/name: backend
+  app.kubernetes.io/version: "1.0.0"
+  app.kubernetes.io/managed-by: Helm
+
+
+app:
+  name: otus-pod
+  container:
+    image: evilscream/otus_docker:1.4
+    port: 8000
+  env:
+    - name: MONGO_URI
+      valueFrom:
+        configMapKeyRef:
+          name: flask-config
+          key: MONGO_URI
+    - name: APP_HOST
+      valueFrom:
+        configMapKeyRef:
+          name: flask-config
+          key: APP_HOST
+    - name: APP_PORT
+      valueFrom:
+        configMapKeyRef:
+          name: flask-config
+          key: APP_PORT
+  livenessProbe:
+    httpGet:
+      path: /health
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+configMap:
+  name: flask-config
+  mongoURI: "mongodb://mongo-svc.m.svc.cluster.local:27017/user_database"
+  appHost: "0.0.0.0"
+  appPort: "8000"
+
+service:
+  name: hw-svc
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+  protocol: TCP
+  selector:
+    app.kubernetes.io/name: backend
+    app.kubernetes.io/version: "1.0.0"
+    app.kubernetes.io/managed-by: Helm
+
+ingress:
+  name: otus-nginx
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /health
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  labels:
+    ingress: otus-hw
+  ingressClassName: nginx
+  host: arch.homework
+  path: /otusapp/([^/]+)/health
+  backend:
+    service:
+      name: hw-svc
+      port: 80
+
+persistentVolumeClaim:
+  name: mongo-pvc
+  accessModes:
+    - ReadWriteOnce
+  storage: 1Gi
+
+mongo:
+  replicaCount: 1
+  name: mongo
+  image: mongo
+  tag: latest
+  containerPort: 27017
+  volumeMountPath: /data/db
+  persistentVolumeClaim: mongo-pvc
+
+
+serviceMongo:
+  name: mongo-svc
+  type: ClusterIP
+  port: 27017
+  targetPort: 27017
+  protocol: TCP
+  selector:
+    db: mongo
+
+IngressUserApi:
+  className: nginx
+  name: hw-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+  host: arch.homework
+  paths:
+    - path: /user(/|$)(.*)
+      backendService: hw-svc
+      backendPort: 80
+    - path: /user/([^/]+)(/|$)(.*)
+      backendService: hw-svc
+      backendPort: 80

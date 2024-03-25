@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deployment.name }}
+  namespace: {{ .Release.Namespace }}
+  labels: 
+    {{- toYaml .Values.deployment.labels | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount | default 1 }}
+  selector:
+    matchLabels:
+      {{- with .Values.commonLabels }}
+      {{- . | toYaml | nindent 6 }}
+      {{- end }}
+  template:
+    metadata:
+      name: {{ .Values.app.name }}
+      labels:
+        {{- with .Values.commonLabels }}
+        {{- . | toYaml | nindent 8 }}
+        {{- end }}
+    spec:
+      containers:
+      - name: {{ .Values.app.name }}
+        image: {{ .Values.app.container.image }}
+        ports:
+        - containerPort: {{ .Values.app.container.port }}
+        env:
+          {{- range .Values.app.env }}
+          - name: {{ .name }}
+            valueFrom:
+              {{- if .valueFrom.configMapKeyRef }}
+              configMapKeyRef:
+                name: {{ .valueFrom.configMapKeyRef.name }}
+                key: {{ .valueFrom.configMapKeyRef.key }}
+              {{- end }}
+          {{- end }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.app.livenessProbe.httpGet.path }}
+            port: {{ .Values.app.container.port }}
+          initialDelaySeconds: {{ .Values.app.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.app.livenessProbe.periodSeconds }}
